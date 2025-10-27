@@ -1,8 +1,8 @@
 # mx-note api docs
 
-默认账号：admin
-默认密码：123456
-默认端口：6600
+默认账号：admin  
+默认密码：123456  
+默认端口：6600  
 
 ## 读
 ### 列出note下的所有文件夹/分类
@@ -31,6 +31,12 @@
 ]
 ```
 
+### 获取文件夹内的note列表
+```/api/v1/list/note```
+
+参数：
+- flodername: 文件夹名称(必须)
+
 ### 获取note的详细信息
 ```/api/v1/list/getNoteInfo```
 
@@ -48,5 +54,32 @@
   "description": "\u8fd9\u662f\u7cfb\u7edf\u9ed8\u8ba4\u7684\u7b14\u8bb0",
   "father-floder": "default",
   "level": 0
+}
+```
+## 写
+### 创建文件夹/分类
+```/api/v1/mkdir```
+
+参数:
+- noteName是必须的，如果没有则返回创建失败的json；
+- father-floder如果没有则为default；
+- author如果没有则为admin；
+- description如果没有则为空字符串；
+- level如果没有则为0；
+- type如果没有则为markdown；
+
+成功返回：
+```json
+{
+  "code": 1,
+  "msg": "Note created successfully"
+}
+```
+
+冲突返回:
+```json
+{
+  "code": 0,
+  "msg": "Note already exists"
 }
 ```

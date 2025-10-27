@@ -1,6 +1,7 @@
 # 安装依赖：pip install flask
 import json
 import os
+import time
 from flask import Flask, jsonify, request
 
 # load config
@@ -33,6 +34,30 @@ def list_floder():
                     # Handle cases where the file is not valid JSON
                     pass
     return jsonify(folders)
+
+# api: /api/v1/list/note
+@app.route('/api/v1/list/note')
+def list_note():
+    folder_name = request.args.get('flodername')
+    if not folder_name:
+        return jsonify({"error": "Missing flodername parameter"}), 400
+
+    folder_path = os.path.join('notes', folder_name)
+    if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
+        return jsonify({"error": "Folder not found"}), 404
+
+    notes = []
+    for filename in os.listdir(folder_path):
+        if filename.endswith('.json'):
+            filepath = os.path.join(folder_path, filename)
+            with open(filepath, 'r', encoding='utf-8') as f:
+                try:
+                    data = json.load(f)
+                    notes.append(data)
+                except json.JSONDecodeError:
+                    pass
+    return jsonify(notes)
+
 
 # api: /api/v1/list/getNoteInfo
 @app.route('/api/v1/list/getNoteInfo')
@@ -89,6 +114,53 @@ def get_note_content():
 
     data['content'] = content
     return jsonify(data)
+
+
+## 写
+### 创建文件夹/分类
+# api: /api/v1/mkdir
+@app.route('/api/v1/mkdir', methods=['GET'])
+def mkdir():
+    noteName = request.args.get('noteName')
+    if not noteName:
+        return jsonify({"code": 0, "msg": "noteName is required"}), 400
+
+    father_floder = request.args.get('father-floder', 'default')
+
+    note_dir = os.path.join('notes', father_floder)
+    json_file_path = os.path.join(note_dir, f'{noteName}.json')
+
+    if os.path.exists(json_file_path):
+        return jsonify({"code": 0, "msg": "Note already exists"}), 400
+
+    author = request.args.get('author', 'admin')
+    description = request.args.get('description', '')
+    level = request.args.get('level', 0)
+    type = request.args.get('type', 'markdown')
+
+    if not os.path.exists(note_dir):
+        os.makedirs(note_dir)
+
+    note_data = {
+        "noteName": noteName,
+        "father-floder": father_floder,
+        "createTime": str(int(time.time())),
+        "author": author,
+        "description": description,
+        "level": level,
+        "type": type
+    }
+
+    with open(json_file_path, 'w', encoding='utf-8') as f:
+        json.dump(note_data, f, ensure_ascii=False, indent=4)
+
+    if type == 'markdown':
+        md_file_path = os.path.join(note_dir, f'{noteName}.md')
+        with open(md_file_path, 'w', encoding='utf-8') as f:
+            f.write(f'# {noteName}\n')
+
+    return jsonify({"code": 1, "msg": "Note created successfully"}), 201
+
 
 if __name__ == '__main__':
     # 从配置中获取主机和端口，并提供默认值
